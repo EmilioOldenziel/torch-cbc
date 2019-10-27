@@ -106,7 +106,7 @@ def main():
 
     
     backbone = BackboneNet()
-    model = CBCModel(backbone, input_shape=(1, 28, 28), n_classes=10, n_components=9, component_shape=(1, 28, 28)).to(device)
+    model = CBCModel(backbone, n_classes=10, n_components=9, component_shape=(1, 28, 28)).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     lossfunction = MarginLoss()

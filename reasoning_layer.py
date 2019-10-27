@@ -3,14 +3,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class ReasoningLayer(nn.Module):
-    def __init__(self, n_classes, input_shape, n_replicas=1, eps=1e-8):
+    def __init__(self, n_components, n_classes, n_replicas=1, eps=1e-8):
         super(ReasoningLayer, self).__init__()
         self.n_classes = n_classes
         self.n_replicas = n_replicas
         self.eps = eps
 
         self.reasoning_probabilities = nn.Parameter(
-            torch.FloatTensor(2, self.n_replicas, input_shape, self.n_classes).uniform_(0, 1)
+            torch.FloatTensor(2, self.n_replicas, n_components, self.n_classes).uniform_(0, 1)
         )
 
     def forward(self, x):
