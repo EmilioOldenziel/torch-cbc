@@ -33,7 +33,7 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
         optimizer.zero_grad()
         output = model(data)
 
-        onehot = torch.zeros(len(target), 10) \
+        onehot = torch.zeros(len(target), 10, device=device) \
             .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
         loss = lossfunction(output, onehot).sum()
         loss.backward()
@@ -44,7 +44,7 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
                 100. * batch_idx / len(train_loader), loss.item()))
 
 
-def test(args, model, device, test_loader):
+def test(args, model, device, test_loader, lossfunction):
     model.eval()
     test_loss = 0
     correct = 0
@@ -52,7 +52,7 @@ def test(args, model, device, test_loader):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss # noqa
+            test_loss += lossfunction(output, target, reduction='sum').item()  # sum up batch loss # noqa
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability # noqa
             correct += pred.eq(target.view_as(pred)).sum().item()
 
@@ -112,7 +112,8 @@ def main():
                      n_classes=10,
                      n_components=9,
                      component_shape=(1, 28, 28)).to(device)
-    print(model, device)
+
+    print(model)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     lossfunction = MarginLoss()
@@ -120,7 +121,7 @@ def main():
     print("Starting training")
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, lossfunction, epoch)  # noqa
-        test(args, model, device, test_loader)
+        test(args, model, device, test_loader, lossfunction)
 
     if (args.save_model):
         torch.save(model.state_dict(), "mnist_cnn.pt")

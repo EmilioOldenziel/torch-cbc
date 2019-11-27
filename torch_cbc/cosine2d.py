@@ -11,6 +11,8 @@ class CosineSimilarity2D(nn.Module):
         self.eps = eps
         self.activation = activation
 
+        self.register_buffer('constant', torch.ones((9, 128, 4, 4)))
+
     def forward(self, x, y):
         """
             Input:
@@ -27,7 +29,7 @@ class CosineSimilarity2D(nn.Module):
                         .clamp(min=self.eps)  # to prevent zero division
 
         # get norm of signals
-        x_norm = F.conv2d(x.pow(2), torch.ones(y.shape)) \
+        x_norm = F.conv2d(x.pow(2), self.constant) \
                   .sqrt() \
                   .clamp(min=self.eps)  # to prevent zero division
 
