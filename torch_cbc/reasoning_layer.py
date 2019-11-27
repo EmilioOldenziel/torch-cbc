@@ -22,7 +22,7 @@ class ReasoningLayer(nn.Module):
             + torch.sum(negative_kernel, 1) \
             / torch.sum(positive_kernel + negative_kernel, 1).clamp(min=self.eps)  # noqa
 
-        # squeeze replica dimension if one.
+        # squeeze replica dimension if it is 1.
         if self.n_replicas == 1:
             probs = probs.squeeze(0)
         else:

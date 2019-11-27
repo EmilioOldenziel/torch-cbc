@@ -112,7 +112,7 @@ def main():
                      n_classes=10,
                      n_components=9,
                      component_shape=(1, 28, 28)).to(device)
-    print(model)
+    print(model, device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     lossfunction = MarginLoss()
