@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class ReasoningLayer(nn.Module):
     def __init__(self, n_components, n_classes, n_replicas=1, eps=1e-10):
         super(ReasoningLayer, self).__init__()
@@ -18,8 +19,8 @@ class ReasoningLayer(nn.Module):
         negative_kernel = (1-positive_kernel) * self.reasoning_probabilities[1]
 
         probs = torch.matmul(x, (positive_kernel - negative_kernel)) \
-                + torch.sum(negative_kernel, 1) \
-                / torch.sum(positive_kernel + negative_kernel, 1).clamp(min=self.eps)
+            + torch.sum(negative_kernel, 1) \
+            / torch.sum(positive_kernel + negative_kernel, 1).clamp(min=self.eps)  # noqa
 
         # squeeze replica dimension if one.
         if self.n_replicas == 1:

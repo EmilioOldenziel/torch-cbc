@@ -24,7 +24,8 @@ class BackboneNet(nn.Module):
         x = F.relu(self.conv4(F.relu(self.conv3(x))))
         x = F.max_pool2d(x, 2, 2)
         return x
-    
+
+
 def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -32,7 +33,8 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
         optimizer.zero_grad()
         output = model(data)
 
-        onehot = torch.zeros(len(target), 10).scatter_(1, target.unsqueeze(1), 1.) # 10 classes
+        onehot = torch.zeros(len(target), 10) \
+            .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
         loss = lossfunction(output, onehot).sum()
         loss.backward()
         optimizer.step()
@@ -40,6 +42,7 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
+
 
 def test(args, model, device, test_loader):
     model.eval()
@@ -49,22 +52,23 @@ def test(args, model, device, test_loader):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, reduction='sum').item() # sum up batch loss
-            pred = output.argmax(dim=1, keepdim=True) # get the index of the max log-probability
+            test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss # noqa
+            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability # noqa
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
 
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(  # noqa
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
+
 
 def main():
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
+    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',  # noqa
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
@@ -77,8 +81,8 @@ def main():
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
-                        help='how many batches to wait before logging training status')
-    
+                        help='how many batches to wait before logging training status')  # noqa
+
     parser.add_argument('--save-model', action='store_true', default=False,
                         help='For Saving the current Model')
     args = parser.parse_args()
@@ -104,17 +108,21 @@ def main():
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
     backbone = BackboneNet()
-    model = CBCModel(backbone, n_classes=10, n_components=9, component_shape=(1, 28, 28)).to(device)
+    model = CBCModel(backbone,
+                     n_classes=10,
+                     n_components=9,
+                     component_shape=(1, 28, 28)).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     lossfunction = MarginLoss()
 
     for epoch in range(1, args.epochs + 1):
-        train(args, model, device, train_loader, optimizer, lossfunction, epoch)
+        train(args, model, device, train_loader, optimizer, lossfunction, epoch)  # noqa
         test(args, model, device, test_loader)
 
     if (args.save_model):
-        torch.save(model.state_dict(),"mnist_cnn.pt")
-        
+        torch.save(model.state_dict(), "mnist_cnn.pt")
+
+
 if __name__ == '__main__':
     main()
