@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from reasoning_layer import ReasoningLayer
-from detection_probability_functions import CosineSimilarity2D
+from cosine2d import CosineSimilarity2D
 
 
 class CBCModel(nn.Module):

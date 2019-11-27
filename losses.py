@@ -5,8 +5,9 @@ import torch.nn.functional as F
 
 class MarginLoss(nn.modules.loss._Loss):
 
-    def __init__(self, margin=0.3):
-        super(MarginLoss, self).__init__(margin)
+    def __init__(self, margin=0.3, size_average=None, reduce=None,
+                 reduction='mean'):
+        super(MarginLoss, self).__init__(size_average, reduce, reduction)
         self.margin = margin
 
     def forward(self, input_, target):

@@ -10,9 +10,9 @@ from cbc_model import CBCModel
 from losses import MarginLoss
 
 
-class BackboneNet(nn.Module):
+class Backbone(nn.Module):
     def __init__(self):
-        super(BackboneNet, self).__init__()
+        super(Backbone, self).__init__()
         self.conv1 = nn.Conv2d(1, 32, 3, 1)
         self.conv2 = nn.Conv2d(32, 64, 3, 1)
         self.conv3 = nn.Conv2d(64, 64, 3, 1)
@@ -107,7 +107,7 @@ def main():
                        ])),
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
-    backbone = BackboneNet()
+    backbone = Backbone()
     model = CBCModel(backbone,
                      n_classes=10,
                      n_components=9,
