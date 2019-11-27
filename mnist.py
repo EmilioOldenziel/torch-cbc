@@ -34,7 +34,7 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
         output = model(data)
 
         onehot = torch.zeros(len(target), 10, device=device) \
-            .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
+                      .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
         loss = lossfunction(output, onehot).sum()
         loss.backward()
         optimizer.step()
@@ -52,7 +52,9 @@ def test(args, model, device, test_loader, lossfunction):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += lossfunction(output, target, reduction='sum').item()  # sum up batch loss # noqa
+            onehot = torch.zeros(len(target), 10, device=device) \
+                          .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
+            test_loss += lossfunction(output, onehot).sum().item()  # sum up batch loss # noqa
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability # noqa
             correct += pred.eq(target.view_as(pred)).sum().item()
 
