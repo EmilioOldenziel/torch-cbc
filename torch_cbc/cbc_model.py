@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from reasoning_layer import ReasoningLayer
-from cosine2d import CosineSimilarity2D
+from .reasoning_layer import ReasoningLayer
+from .cosine2d import CosineSimilarity2D
 
 
 class CBCModel(nn.Module):

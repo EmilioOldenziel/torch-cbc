@@ -6,8 +6,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 
-from cbc_model import CBCModel
-from losses import MarginLoss
+from torch_cbc.cbc_model import CBCModel
+from torch_cbc.losses import MarginLoss
 
 
 class Backbone(nn.Module):
@@ -112,10 +112,12 @@ def main():
                      n_classes=10,
                      n_components=9,
                      component_shape=(1, 28, 28)).to(device)
+    print(model)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     lossfunction = MarginLoss()
 
+    print("Starting training")
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, lossfunction, epoch)  # noqa
         test(args, model, device, test_loader)
