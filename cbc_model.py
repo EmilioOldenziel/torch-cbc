@@ -11,17 +11,19 @@ class CBCModel(nn.Module):
         
         self.backbone = backbone
         
-        self.components = nn.Parameter(torch.zeros((n_components,) + component_shape)) # (n_components, H, W)
+        self.components = nn.Parameter(
+            torch.rand((n_components,) + component_shape).uniform_(0.45, 0.55) # (n_components, H, W)
+        )
+
         self.similarity = CosineSimilarity2D()
-        self.reasoning_layer = ReasoningLayer(n_components=n_components, n_classes=n_classes) #[1, n_components) -> (1, n_classes)
+        self.reasoning_layer = ReasoningLayer(n_components=n_components, n_classes=n_classes) # (1, n_components) -> (1, n_classes)
         
     def forward(self, x):
+
         x = self.backbone(x)
         y = self.backbone(self.components)
 
-        detection = self.similarity(x, y)
+        detection = self.similarity(x, y) # detection: (batch, n_components, 1, 1)
+        detection = detection.squeeze(-1).squeeze(-1) # (batch size, n_components)
 
-        detection = detection.permute(0,2,3,1)
-        detection = detection.squeeze(1).squeeze(1) # (batch size, n_components)
-
-        return self.reasoning_layer(detection) 
+        return self.reasoning_layer(detection)
