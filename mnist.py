@@ -8,15 +8,20 @@ from torchvision import datasets, transforms
 
 from torch_cbc.cbc_model import CBCModel
 from torch_cbc.losses import MarginLoss
+from torch_cbc.constraints import EuclideanNormalization
+from torch_cbc.layers import ConstrainedConv2d
+from torch_cbc.activations import Swish
 
 
 class Backbone(nn.Module):
     def __init__(self):
         super(Backbone, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.conv3 = nn.Conv2d(64, 64, 3, 1)
-        self.conv4 = nn.Conv2d(64, 128, 3, 1)
+        self.conv2d = ConstrainedConv2d
+
+        self.conv1 = self.conv2d(1, 32, 3, 1)
+        self.conv2 = self.conv2d(32, 64, 3, 1)
+        self.conv3 = self.conv2d(64, 64, 3, 1)
+        self.conv4 = self.conv2d(64, 128, 3, 1)
 
     def forward(self, x):
         x = F.relu(self.conv2(F.relu(self.conv1(x))))
@@ -38,6 +43,11 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
         loss = lossfunction(output, onehot).sum()
         loss.backward()
         optimizer.step()
+
+        for name, p in model.named_parameters():
+            if 'reasoning' in name or 'components' in name:
+                p.data.clamp_(0)
+
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),

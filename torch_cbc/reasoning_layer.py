@@ -13,6 +13,7 @@ class ReasoningLayer(nn.Module):
         self.reasoning_probabilities = nn.Parameter(
             torch.rand(2, self.n_replicas, n_components, self.n_classes)
         )
+        # self.reasoning_probabilities.register_hook(lambda x: x.clamp(min=0.0, max=1.0))  # noqa
 
     def forward(self, x):
         positive_kernel = self.reasoning_probabilities[0]
