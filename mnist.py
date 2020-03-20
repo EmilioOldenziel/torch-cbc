@@ -31,19 +31,22 @@ class Backbone(nn.Module):
         return x
 
 
-def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
+def train(args, model, device, train_loader, optimizer1, optimizer2, lossfunction, epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
-        optimizer.zero_grad()
+        optimizer1.zero_grad()
+        optimizer2.zero_grad()
         output = model(data)
 
         onehot = torch.zeros(len(target), 10, device=device) \
                       .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
         loss = lossfunction(output, onehot).sum()
         loss.backward()
-        optimizer.step()
+        optimizer1.step()
+        optimizer2.step()
 
+        # Clamp reasoning and components
         for name, p in model.named_parameters():
             if 'reasoning' in name or 'components' in name:
                 p.data.clamp_(0)
@@ -127,12 +130,16 @@ def main():
 
     print(model)
 
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    backbone_params = [p for name, p in model.named_parameters() if not 'components' in name]
+    component_params = [p for name, p in model.named_parameters() if not 'backbone' in name]
+
+    optimizer2 = optim.Adam(backbone_params, lr=args.lr)
+    optimizer1 = optim.Adam(component_params, lr=args.lr)
     lossfunction = MarginLoss()
 
     print("Starting training")
     for epoch in range(1, args.epochs + 1):
-        train(args, model, device, train_loader, optimizer, lossfunction, epoch)  # noqa
+        train(args, model, device, train_loader, optimizer1, optimizer2, lossfunction, epoch)  # noqa
         test(args, model, device, test_loader, lossfunction)
 
     if (args.save_model):
