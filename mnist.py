@@ -12,6 +12,8 @@ from torch_cbc.constraints import EuclideanNormalization
 from torch_cbc.layers import ConstrainedConv2d
 from torch_cbc.activations import Swish
 
+def swish(x):
+    return x * F.sigmoid(x)
 
 class Backbone(nn.Module):
     def __init__(self):
@@ -24,9 +26,9 @@ class Backbone(nn.Module):
         self.conv4 = self.conv2d(64, 128, 3, 1)
 
     def forward(self, x):
-        x = F.relu(self.conv2(F.relu(self.conv1(x))))
+        x = swish(self.conv2(swish(self.conv1(x))))
         x = F.max_pool2d(x, 2, 2)
-        x = F.relu(self.conv4(F.relu(self.conv3(x))))
+        x = swish(self.conv4(swish(self.conv3(x))))
         x = F.max_pool2d(x, 2, 2)
         return x
 
