@@ -32,21 +32,27 @@ class Backbone(nn.Module):
         x = F.max_pool2d(x, 2, 2)
         return x
 
+import cv2 as cv
+def v_test(epoch, model):
+    for idx, c in enumerate(model.components):
+        prototype = c
+        img = prototype.view(28, 28).cpu().data.numpy()
+        img = img * 255
+        img = cv.resize(img, (56, 56))
+        cv.imwrite("char_img/%d_%d.png" % (epoch, idx), img)
 
-def train(args, model, device, train_loader, optimizer1, optimizer2, lossfunction, epoch):
+def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
-        optimizer1.zero_grad()
-        optimizer2.zero_grad()
+        optimizer.zero_grad()
         output = model(data)
 
         onehot = torch.zeros(len(target), 10, device=device) \
                       .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
-        loss = lossfunction(output, onehot).sum()
+        loss = lossfunction(output, onehot).mean() #it seems mean better than sum
         loss.backward()
-        optimizer1.step()
-        optimizer2.step()
+        optimizer.step()
 
         # Clamp reasoning and components
         for name, p in model.named_parameters():
@@ -113,14 +119,12 @@ def main():
     train_loader = torch.utils.data.DataLoader(
         datasets.MNIST('../data', train=True, download=True,
                        transform=transforms.Compose([
-                           transforms.ToTensor(),
-                           transforms.Normalize((0.1307,), (0.3081,))
+                           transforms.ToTensor()
                        ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
         datasets.MNIST('../data', train=False, transform=transforms.Compose([
-                           transforms.ToTensor(),
-                           transforms.Normalize((0.1307,), (0.3081,))
+                           transforms.ToTensor()
                        ])),
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
@@ -132,17 +136,19 @@ def main():
 
     print(model)
 
-    backbone_params = [p for name, p in model.named_parameters() if not 'components' in name]
-    component_params = [p for name, p in model.named_parameters() if not 'backbone' in name]
+    #backbone_params = [p for name, p in model.named_parameters() if not 'components' in name]
+    #component_params = [p for name, p in model.named_parameters() if not 'backbone' in name]
 
-    optimizer2 = optim.Adam(backbone_params, lr=args.lr)
-    optimizer1 = optim.Adam(component_params, lr=args.lr)
+    #optimizer2 = optim.Adam(backbone_params, lr=args.lr)
+    #optimizer1 = optim.Adam(component_params, lr=args.lr)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
     lossfunction = MarginLoss()
 
     print("Starting training")
     for epoch in range(1, args.epochs + 1):
-        train(args, model, device, train_loader, optimizer1, optimizer2, lossfunction, epoch)  # noqa
+        train(args, model, device, train_loader, optimizer, lossfunction, epoch)  # noqa
         test(args, model, device, test_loader, lossfunction)
+        v_test(epoch, model)
 
     if (args.save_model):
         torch.save(model.state_dict(), "mnist_cnn.pt")
