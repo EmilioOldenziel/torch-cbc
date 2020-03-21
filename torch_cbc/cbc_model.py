@@ -24,7 +24,6 @@ class CBCModel(nn.Module):
     def forward(self, x):
 
         x = self.backbone(x)
-        y = self.backbone(self.components)
         y = copy.deepcopy(self.backbone)(self.components)
 
         detection = self.similarity(x, y)
