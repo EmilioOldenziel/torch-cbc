@@ -12,5 +12,5 @@ class MarginLoss(nn.modules.loss._Loss):
 
     def forward(self, input_, target):
         dp = torch.sum(target * input_, dim=-1)
-        dm = torch.max(input_ - target, dim=-1).values
+        dm = torch.max(input_ - target * input_, dim=-1).values
         return F.relu(dm - dp + self.margin)

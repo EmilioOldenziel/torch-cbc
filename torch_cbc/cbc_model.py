@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import copy
 
 from .reasoning_layer import ReasoningLayer
 from .cosine2d import CosineSimilarity2D
@@ -23,7 +24,7 @@ class CBCModel(nn.Module):
     def forward(self, x):
 
         x = self.backbone(x)
-        y = self.backbone(self.components)
+        y = copy.deepcopy(self.backbone)(self.components)
 
         detection = self.similarity(x, y)
         # detection: (batch, n_components, 1, 1)
