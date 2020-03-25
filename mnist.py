@@ -113,7 +113,7 @@ def main():
         datasets.MNIST('../data', train=True, download=True,
                        transform=transforms.Compose([
                            transforms.RandomAffine(0, translate=(1/14, 1/14)),
-                           transforms.RandomRotation(15),
+                           transforms.RandomRotation(15, fill=(0,)),
                            transforms.ToTensor()
                        ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
