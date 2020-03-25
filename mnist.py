@@ -12,8 +12,8 @@ from torch_cbc.constraints import EuclideanNormalization
 from torch_cbc.layers import ConstrainedConv2d
 from torch_cbc.activations import Swish
 
-def swish(x):
-    return x * F.sigmoid(x)
+from utils import visualize_components
+
 
 class Backbone(nn.Module):
     def __init__(self):
@@ -24,22 +24,15 @@ class Backbone(nn.Module):
         self.conv2 = self.conv2d(32, 64, 3, 1)
         self.conv3 = self.conv2d(64, 64, 3, 1)
         self.conv4 = self.conv2d(64, 128, 3, 1)
+        self.swish = Swish()
 
     def forward(self, x):
-        x = swish(self.conv2(swish(self.conv1(x))))
+        x = self.swish(self.conv2(self.swish(self.conv1(x))))
         x = F.max_pool2d(x, 2, 2)
-        x = swish(self.conv4(swish(self.conv3(x))))
+        x = self.swish(self.conv4(self.swish(self.conv3(x))))
         x = F.max_pool2d(x, 2, 2)
         return x
 
-import cv2 as cv
-def v_test(epoch, model):
-    for idx, c in enumerate(model.components):
-        prototype = c
-        img = prototype.view(28, 28).cpu().data.numpy()
-        img = img * 255
-        img = cv.resize(img, (56, 56))
-        cv.imwrite("char_img/%d_%d.png" % (epoch, idx), img)
 
 def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
     model.train()
@@ -50,7 +43,7 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
 
         onehot = torch.zeros(len(target), 10, device=device) \
                       .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
-        loss = lossfunction(output, onehot).mean() #it seems mean better than sum
+        loss = lossfunction(output, onehot).mean()
         loss.backward()
         optimizer.step()
 
@@ -85,6 +78,8 @@ def test(args, model, device, test_loader, lossfunction):
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
+    return test_loss
+
 
 def main():
     # Training settings
@@ -96,9 +91,7 @@ def main():
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--lr', type=float, default=0.003, metavar='LR',
-                        help='learning rate (default: 0.01)')
-    parser.add_argument('--momentum', type=float, default=0.5, metavar='M',
-                        help='SGD momentum (default: 0.5)')
+                        help='learning rate (default: 0.003)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
@@ -119,6 +112,8 @@ def main():
     train_loader = torch.utils.data.DataLoader(
         datasets.MNIST('../data', train=True, download=True,
                        transform=transforms.Compose([
+                           transforms.RandomAffine(0, translate=(1/14, 1/14)),
+                           transforms.RandomRotation(15),
                            transforms.ToTensor()
                        ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
@@ -136,19 +131,17 @@ def main():
 
     print(model)
 
-    #backbone_params = [p for name, p in model.named_parameters() if not 'components' in name]
-    #component_params = [p for name, p in model.named_parameters() if not 'backbone' in name]
-
-    #optimizer2 = optim.Adam(backbone_params, lr=args.lr)
-    #optimizer1 = optim.Adam(component_params, lr=args.lr)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.9)
+
     lossfunction = MarginLoss()
 
     print("Starting training")
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, lossfunction, epoch)  # noqa
-        test(args, model, device, test_loader, lossfunction)
-        v_test(epoch, model)
+        test_loss = test(args, model, device, test_loader, lossfunction)
+        scheduler.step(test_loss)
+        visualize_components(epoch, model)
 
     if (args.save_model):
         torch.save(model.state_dict(), "mnist_cnn.pt")
