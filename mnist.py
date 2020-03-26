@@ -24,12 +24,13 @@ class Backbone(nn.Module):
         self.conv2 = self.conv2d(32, 64, 3, 1)
         self.conv3 = self.conv2d(64, 64, 3, 1)
         self.conv4 = self.conv2d(64, 128, 3, 1)
+        self.maxpool2d = nn.MaxPool2d(2)
 
     def forward(self, x):
         x = swish(self.conv2(swish(self.conv1(x))))
-        x = F.max_pool2d(x, 2, 2)
+        x = self.maxpool2d(x)
         x = swish(self.conv4(swish(self.conv3(x))))
-        x = F.max_pool2d(x, 2, 2)
+        x = self.maxpool2d(x)
         return x
 
 
@@ -139,7 +140,7 @@ def main():
         train(args, model, device, train_loader, optimizer, lossfunction, epoch)  # noqa
         test_loss = test(args, model, device, test_loader, lossfunction)
         scheduler.step(test_loss)
-        visualize_components(epoch, model)
+        visualize_components(epoch, model, "./visualzation")
 
     if (args.save_model):
         torch.save(model.state_dict(), "mnist_cnn.pt")

@@ -1,7 +1,10 @@
 import cv2 as cv
 
 
-def visualize_components(epoch, model):
+def visualize_components(epoch, model, save_path):
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
     for idx, c in enumerate(model.components):
         component = c
         img = component.view(28, 28).cpu().data.numpy()
