@@ -12,5 +12,5 @@ def visualize_components(epoch, model, save_path):
         img = img * 255
         img = cv.resize(img, (56, 56))
 
-        cv2.imwrite(f"{save_path}/{epoch}_{idx}.png",
-                    cv2.cvtColor(make_uint8_img(img), cv2.COLOR_RGB2BGR))
+        cv.imwrite(f"{save_path}/{epoch}_{idx}.png",
+                   cv.cvtColor(make_uint8_img(img), cv.COLOR_RGB2BGR))
