@@ -1,4 +1,5 @@
 import cv2 as cv
+import os
 
 
 def visualize_components(epoch, model, save_path):
@@ -10,4 +11,6 @@ def visualize_components(epoch, model, save_path):
         img = component.view(28, 28).cpu().data.numpy()
         img = img * 255
         img = cv.resize(img, (56, 56))
-        cv.imwrite(f"char_img/{epoch}_{idx}.png", img)
+
+        cv2.imwrite(f"{save_path}/{epoch}_{idx}.png",
+                    cv2.cvtColor(make_uint8_img(img), cv2.COLOR_RGB2BGR))
