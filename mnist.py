@@ -131,7 +131,8 @@ def main():
     print(model)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.9)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 
+                                                     patience=5, factor=0.9)
 
     lossfunction = MarginLoss()
 

@@ -29,9 +29,9 @@ class ReasoningLayer(nn.Module):
 
     def forward(self, x):
         positive_kernel = self.reasoning_probabilities[0].clamp(0, 1)
-        negative_kernel = (1-positive_kernel) * self.reasoning_probabilities[1].clamp(0, 1)
+        negative_kernel = (1-positive_kernel) * self.reasoning_probabilities[1].clamp(0, 1)  # noqa
 
-        probs = (torch.matmul(x, (positive_kernel - negative_kernel)) \
+        probs = (torch.matmul(x, (positive_kernel - negative_kernel))
             + torch.sum(negative_kernel, 1)) \
             / torch.sum(positive_kernel + negative_kernel, 1).clamp(min=self.eps)  # noqa
 
