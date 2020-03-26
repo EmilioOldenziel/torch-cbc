@@ -10,7 +10,7 @@ from torch_cbc.cbc_model import CBCModel
 from torch_cbc.losses import MarginLoss
 from torch_cbc.constraints import EuclideanNormalization
 from torch_cbc.layers import ConstrainedConv2d
-from torch_cbc.activations import Swish
+from torch_cbc.activations import swish
 
 from utils import visualize_components
 
@@ -24,12 +24,11 @@ class Backbone(nn.Module):
         self.conv2 = self.conv2d(32, 64, 3, 1)
         self.conv3 = self.conv2d(64, 64, 3, 1)
         self.conv4 = self.conv2d(64, 128, 3, 1)
-        self.swish = Swish()
 
     def forward(self, x):
-        x = self.swish(self.conv2(self.swish(self.conv1(x))))
+        x = swish(self.conv2(swish(self.conv1(x))))
         x = F.max_pool2d(x, 2, 2)
-        x = self.swish(self.conv4(self.swish(self.conv3(x))))
+        x = swish(self.conv4(swish(self.conv3(x))))
         x = F.max_pool2d(x, 2, 2)
         return x
 
@@ -47,10 +46,9 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
         loss.backward()
         optimizer.step()
 
-        # Clamp reasoning and components
         for name, p in model.named_parameters():
-            if 'reasoning' in name or 'components' in name:
-                p.data.clamp_(0)
+            if ('components' in name) or ('reasoning' in name):
+                p.data.clamp_(0, 1)
 
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import copy
 
-from .reasoning_layer import ReasoningLayer
+from .layers import ReasoningLayer
 from .cosine2d import CosineSimilarity2D
 
 
