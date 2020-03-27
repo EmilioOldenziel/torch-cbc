@@ -57,7 +57,7 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
                 100. * batch_idx / len(train_loader), loss.item()))
 
 
-def test(args, model, device, test_loader, lossfunction):
+def test(model, device, test_loader, lossfunction):
     model.eval()
     test_loss = 0
     correct = 0
@@ -91,13 +91,16 @@ def main():
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--lr', type=float, default=0.003, metavar='LR',
                         help='learning rate (default: 0.003)')
+    parser.add_argument('--margin', type=float, default=0.3,
+                        help='Margin Loss margin (default: 0.3)')
+    parser.add_argument('--n_components', type=int, default=9, metavar='N',
+                        help='number of components (default: 9)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')  # noqa
-
     parser.add_argument('--save-model', action='store_true', default=False,
                         help='For Saving the current Model')
     args = parser.parse_args()
@@ -125,7 +128,7 @@ def main():
     backbone = Backbone()
     model = CBCModel(backbone,
                      n_classes=10,
-                     n_components=9,
+                     n_components=args.n_components,
                      component_shape=(1, 28, 28)).to(device)
 
     print(model)
@@ -134,7 +137,7 @@ def main():
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 
                                                      patience=5, factor=0.9)
 
-    lossfunction = MarginLoss()
+    lossfunction = MarginLoss(margin=args.margin)
 
     print("Starting training")
     for epoch in range(1, args.epochs + 1):
