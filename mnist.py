@@ -57,7 +57,7 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
                 100. * batch_idx / len(train_loader), loss.item()))
 
 
-def test(model, device, test_loader, lossfunction):
+def test(args, model, device, test_loader, lossfunction):
     model.eval()
     test_loss = 0
     correct = 0
@@ -73,7 +73,7 @@ def test(model, device, test_loader, lossfunction):
 
     test_loss /= len(test_loader.dataset)
 
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(  # noqa
+    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(  # noqa
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 

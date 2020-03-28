@@ -1,6 +1,6 @@
 class EuclideanNormalization():
 
-    def __init__(self, dim=(0, 1, 2), eps=10e-10):
+    def __init__(self, dim=(1, 2, 3), eps=1e-08):
         self.dim = dim
         self.eps = eps
 
