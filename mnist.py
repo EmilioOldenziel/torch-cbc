@@ -14,6 +14,8 @@ from torch_cbc.activations import swish
 
 from utils import visualize_components
 
+import numpy as np
+
 
 class Backbone(nn.Module):
     def __init__(self):
@@ -129,7 +131,33 @@ def main():
     model = CBCModel(backbone,
                      n_classes=10,
                      n_components=args.n_components,
-                     component_shape=(1, 28, 28)).to(device)
+                     component_shape=(1, 28, 28))
+    
+    model.backbone.conv1.weight.data = torch.as_tensor(np.load("./keras_weights/conv2d_1_weights.npy"), dtype=torch.float32).permute(3,2,1,0)
+    model.backbone.conv1.bias.data = torch.as_tensor(np.load("./keras_weights/conv2d_1_bias.npy"), dtype=torch.float32)
+
+    model.backbone.conv2.weight.data = torch.as_tensor(np.load("./keras_weights/conv2d_2_weights.npy"), dtype=torch.float32).permute(3,2,1,0)
+    model.backbone.conv2.bias.data = torch.as_tensor(np.load("./keras_weights/conv2d_2_bias.npy"), dtype=torch.float32)
+
+    model.backbone.conv3.weight.data = torch.as_tensor(np.load("./keras_weights/conv2d_3_weights.npy"), dtype=torch.float32).permute(3,2,1,0)
+    model.backbone.conv3.bias.data = torch.as_tensor(np.load("./keras_weights/conv2d_3_bias.npy"), dtype=torch.float32)
+
+    model.backbone.conv4.weight.data = torch.as_tensor(np.load("./keras_weights/conv2d_4_weights.npy"), dtype=torch.float32).permute(3,2,1,0)
+    model.backbone.conv4.bias.data = torch.as_tensor(np.load("./keras_weights/conv2d_4_bias.npy"), dtype=torch.float32)
+
+    #print(torch.as_tensor(np.load("./keras_weights/add_components_1_weights.npy"), dtype=torch.float32).squeeze(0).permute(0,3,1,2).shape)
+    #print(model.components.shape)
+    model.components.data = torch.as_tensor(np.load("./keras_weights/add_components_1_weights.npy"), dtype=torch.float32).squeeze(0).permute(0,3,1,2)
+
+    for name, p in model.named_parameters():
+        if ("backbone" in name) or ("components" in name):
+            p.requires_grad = False
+        else:
+            print(name)
+
+    model.to(device)
+
+    
 
     print(model)
 
