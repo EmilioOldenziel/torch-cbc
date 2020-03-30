@@ -1,5 +1,5 @@
-import cv2 as cv
 import os
+from PIL import Image, ImageOps
 
 
 def visualize_components(epoch, model, save_path):
@@ -10,7 +10,7 @@ def visualize_components(epoch, model, save_path):
         component = c
         img = component.view(28, 28).cpu().data.numpy()
         img = img * 255
-        img = cv.resize(img, (56, 56))
 
-        cv.imwrite(f"{save_path}/{epoch}_{idx}.png",
-                   cv.cvtColor(img, cv.COLOR_RGB2BGR))
+        image = Image.fromarray(img).convert('RGB')
+        image = image.resize((56, 56))
+        img_with_border.save(f"{save_path}/{epoch}_{idx}.png")

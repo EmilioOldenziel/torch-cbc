@@ -21,16 +21,16 @@ class Backbone(nn.Module):
         self.conv2d = ConstrainedConv2d
 
         self.conv1 = self.conv2d(1, 32, 3, 1)
-        torch.nn.init.xavier_uniform(self.conv1.weight)
+        torch.nn.init.xavier_uniform_(self.conv1.weight)
         torch.nn.init.zeros_(self.conv1.bias)
         self.conv2 = self.conv2d(32, 64, 3, 1)
-        torch.nn.init.xavier_uniform(self.conv2.weight)
+        torch.nn.init.xavier_uniform_(self.conv2.weight)
         torch.nn.init.zeros_(self.conv2.bias)
-        self.conv3 = self.conv2d(64, 64, 3, 1)
-        torch.nn.init.xavier_uniform(self.conv3.weight)
+        self.conv3 = self.conv2d_(64, 64, 3, 1)
+        torch.nn.init.xavier_uniform_(self.conv3.weight)
         torch.nn.init.zeros_(self.conv3.bias)
         self.conv4 = self.conv2d(64, 128, 3, 1)
-        torch.nn.init.xavier_uniform(self.conv4.weight)
+        torch.nn.init.xavier_uniform_(self.conv4.weight)
         torch.nn.init.zeros_(self.conv4.bias)
         self.maxpool2d = nn.MaxPool2d(2)
 
@@ -122,7 +122,9 @@ def main():
     train_loader = torch.utils.data.DataLoader(
         datasets.MNIST('../data', train=True, download=True,
                        transform=transforms.Compose([
-                           transforms.RandomAffine(0, translate=(1/14, 1/14)),
+                           transforms.RandomAffine(0, 
+                                                   translate=(0.1, 0.1),
+                                                   scale=0.1),
                            transforms.RandomRotation(15, fill=(0,)),
                            transforms.ToTensor()
                        ])),
