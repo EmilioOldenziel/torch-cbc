@@ -142,9 +142,9 @@ def main():
 
     print(model)
 
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', 
-                                                     patience=5, 
+                                                     patience=3, 
                                                      factor=0.9,
                                                      verbose=True)
 
