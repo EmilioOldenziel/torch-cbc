@@ -21,9 +21,17 @@ class Backbone(nn.Module):
         self.conv2d = ConstrainedConv2d
 
         self.conv1 = self.conv2d(1, 32, 3, 1)
+        torch.nn.init.xavier_uniform(self.conv1.weight)
+        torch.nn.init.zeros_(self.conv1.bias)
         self.conv2 = self.conv2d(32, 64, 3, 1)
+        torch.nn.init.xavier_uniform(self.conv2.weight)
+        torch.nn.init.zeros_(self.conv2.bias)
         self.conv3 = self.conv2d(64, 64, 3, 1)
+        torch.nn.init.xavier_uniform(self.conv3.weight)
+        torch.nn.init.zeros_(self.conv3.bias)
         self.conv4 = self.conv2d(64, 128, 3, 1)
+        torch.nn.init.xavier_uniform(self.conv4.weight)
+        torch.nn.init.zeros_(self.conv4.bias)
         self.maxpool2d = nn.MaxPool2d(2)
 
     def forward(self, x):
@@ -144,7 +152,7 @@ def main():
         train(args, model, device, train_loader, optimizer, lossfunction, epoch)  # noqa
         test_loss = test(args, model, device, test_loader, lossfunction)
         scheduler.step(test_loss)
-        visualize_components(epoch, model, "./visualzation")
+        visualize_components(epoch, model, "./visualization")
 
     if (args.save_model):
         torch.save(model.state_dict(), "mnist_cnn.pt")
