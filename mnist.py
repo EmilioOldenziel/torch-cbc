@@ -26,7 +26,7 @@ class Backbone(nn.Module):
         self.conv2 = self.conv2d(32, 64, 3, 1)
         torch.nn.init.xavier_uniform_(self.conv2.weight)
         torch.nn.init.zeros_(self.conv2.bias)
-        self.conv3 = self.conv2d_(64, 64, 3, 1)
+        self.conv3 = self.conv2d(64, 64, 3, 1)
         torch.nn.init.xavier_uniform_(self.conv3.weight)
         torch.nn.init.zeros_(self.conv3.bias)
         self.conv4 = self.conv2d(64, 128, 3, 1)
@@ -124,7 +124,7 @@ def main():
                        transform=transforms.Compose([
                            transforms.RandomAffine(0, 
                                                    translate=(0.1, 0.1),
-                                                   scale=0.1),
+                                                   scale=(0.1, 0.1)),
                            transforms.RandomRotation(15, fill=(0,)),
                            transforms.ToTensor()
                        ])),
