@@ -20,7 +20,7 @@ class Backbone(nn.Module):
         super(Backbone, self).__init__()
         self.conv2d = ConstrainedConv2d
 
-        self.conv1 = self.conv2d(1, 32, 3, 1)
+        self.conv1 = self.conv2d(3, 32, 3, 1)
         torch.nn.init.xavier_uniform_(self.conv1.weight)
         torch.nn.init.zeros_(self.conv1.bias)
         self.conv2 = self.conv2d(32, 64, 3, 1)
@@ -97,11 +97,11 @@ def main():
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
-    parser.add_argument('--lr', type=float, default=0.003, metavar='LR',
+    parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                         help='learning rate (default: 0.003)')
     parser.add_argument('--margin', type=float, default=0.3,
                         help='Margin Loss margin (default: 0.3)')
-    parser.add_argument('--n_components', type=int, default=9, metavar='C',
+    parser.add_argument('--n_components', type=int, default=10, metavar='C',
                         help='number of components (default: 9)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
@@ -120,16 +120,16 @@ def main():
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=True, download=True,
-                       transform=transforms.Compose([
-                           transforms.RandomAffine(0, 
-                                                   translate=(0.1, 0.1)),
-                           transforms.RandomRotation(15, fill=(0,)),
-                           transforms.ToTensor()
+        datasets.CIFAR10('../data', train=True, download=True,
+                         transform=transforms.Compose([
+                            transforms.RandomAffine(0,
+                                                    translate=(0.1, 0.1)),
+                            #transforms.RandomRotation(15, fill=(0,)),
+                            transforms.ToTensor()
                        ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=False, transform=transforms.Compose([
+        datasets.CIFAR10('../data', train=False, transform=transforms.Compose([
                            transforms.ToTensor()
                        ])),
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
@@ -138,7 +138,7 @@ def main():
     model = CBCModel(backbone,
                      n_classes=10,
                      n_components=args.n_components,
-                     component_shape=(1, 28, 28)).to(device)
+                     component_shape=(3, 32, 32)).to(device)
 
     print(model)
 
@@ -158,7 +158,7 @@ def main():
         visualize_components(epoch, model, "./visualization")
 
     if (args.save_model):
-        torch.save(model.state_dict(), "mnist_cnn.pt")
+        torch.save(model.state_dict(), "cifar10_cnn.pt")
 
 
 if __name__ == '__main__':

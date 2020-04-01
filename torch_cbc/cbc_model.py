@@ -17,7 +17,12 @@ class CBCModel(nn.Module):
             torch.rand((n_components,) + component_shape).uniform_(0.45, 0.55)
         )
 
-        self.similarity = CosineSimilarity2D(filter_size=(n_components, 128, 4, 4))  # noqa
+        # get size of feature map that will be input for the Cosine2D layer
+        featuremap_shape = self.backbone(
+            torch.zeros((1,) + component_shape)).shape[1:]
+
+        self.similarity = CosineSimilarity2D(filter_size=(n_components,) + featuremap_shape)  # noqa
+
         self.reasoning_layer = ReasoningLayer(n_components=n_components,
                                               n_classes=n_classes)
 
