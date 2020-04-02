@@ -142,15 +142,18 @@ def main():
 
     # set components with class mean
     for c in range(10):
-        model.components[c].data = torch.as_tensor(train_loader.dataset.data[
-            torch.Tensor(train_loader.dataset.targets) == c
-        ].mean(axis=0)).permute(2, 0, 1)
+        model.components[c].data = transforms.ToTensor()(
+            train_loader.dataset.data[
+                torch.as_tensor(train_loader.dataset.targets) == c]
+            .mean(axis=0))
 
+        # set positive reasoning to 1.0 for component c for class c
         model.reasoning_layer.reasoning_probabilities.data[0, 0, c, c] = 1
+    visualize_components(0, model, "./visualization")
 
     print(model)
 
-    optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',
                                                      patience=3,
                                                      factor=0.9,
