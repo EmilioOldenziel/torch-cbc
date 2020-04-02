@@ -148,7 +148,8 @@ def main():
                                                      factor=0.9,
                                                      verbose=True)
 
-    lossfunction = MarginLoss(margin=args.margin)
+    lossfunction = torch.nn.MSELoss()
+    # lossfunction = MarginLoss(margin=args.margin)
 
     print("Starting training")
     for epoch in range(1, args.epochs + 1):
