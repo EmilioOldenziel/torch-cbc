@@ -124,7 +124,7 @@ def main():
                          transform=transforms.Compose([
                             transforms.RandomAffine(0,
                                                     translate=(0.1, 0.1)),
-                            #transforms.RandomRotation(15, fill=(0,)),
+                            # transforms.RandomRotation(15, fill=(0,)),
                             transforms.ToTensor()
                        ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
@@ -139,6 +139,14 @@ def main():
                      n_classes=10,
                      n_components=args.n_components,
                      component_shape=(3, 32, 32)).to(device)
+
+    # set components with class mean
+    for c in range(10):
+        model.components[c].data = torch.as_tensor(train_loader.dataset.data[
+            torch.Tensor(train_loader.dataset.targets) == c
+        ].mean(axis=0)).permute(2, 0, 1)
+
+        model.reasoning_layer.reasoning_probabilities.data[0, 0, c, c] = 1
 
     print(model)
 
