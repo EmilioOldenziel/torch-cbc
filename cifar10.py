@@ -158,12 +158,20 @@ def main():
                                                      patience=3,
                                                      factor=0.9,
                                                      verbose=True)
-
+    # start training with MSE
     lossfunction = torch.nn.MSELoss()
-    # lossfunction = MarginLoss(margin=args.margin)
 
     print("Starting training")
     for epoch in range(1, args.epochs + 1):
+
+        # loss scheduling
+        if epoch == 25:
+            lossfunction = MarginLoss(margin=0.1)
+        if epoch == 175:
+            lossfunction.margin = 0.2
+        if epoch == 325:
+            lossfunction.margin = 0.3
+
         train(args, model, device, train_loader, optimizer, lossfunction, epoch)  # noqa
         test_loss = test(args, model, device, test_loader, lossfunction)
         scheduler.step(test_loss)
