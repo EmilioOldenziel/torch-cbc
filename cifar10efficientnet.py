@@ -137,6 +137,8 @@ def main():
     # set reasoning probabilities to zero
     reasoning_init(model.reasoning_layer.reasoning_probabilities, args.n_components, 10)
 
+    print("comp", model.components.shape)
+
     import numpy as np
     from PIL import Image
 
@@ -145,11 +147,13 @@ def main():
         class_target_indices = np.where(np.array(train_loader.dataset.targets) == class_idx)[0][:5]
         class_components = np.take(train_loader.dataset.data, class_target_indices, axis=0)
 
+        print(class_target_indices)
+
         for class_component_idx in range(args.n_components):
             
             image_idx = (class_idx*args.n_components)+class_component_idx
-            print("image_index", image_idx)
-            model.components[image_idx].data = test_loader.dataset.transform(Image.fromarray(class_components[class_component_idx]))
+
+            model.components.data[image_idx] = test_loader.dataset.transform(Image.fromarray(class_components[class_component_idx]))
 
         tmp = model.reasoning_layer.reasoning_probabilities.data[0, 0, image_idx, class_idx]
         model.reasoning_layer.reasoning_probabilities.data[0, 0, image_idx, class_idx] = model.reasoning_layer.reasoning_probabilities[-1, 0, image_idx, class_idx]
