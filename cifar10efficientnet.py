@@ -6,11 +6,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 
-from torch_cbc.cbc_model import CBCModel
+from torch_cbc.fixedCBC_model import FixedCBCModel
 from torch_cbc.losses import MarginLoss
-from torch_cbc.constraints import EuclideanNormalization
-from torch_cbc.layers import ConstrainedConv2d
-from torch_cbc.activations import swish
 
 from utils import visualize_components
 
@@ -25,13 +22,6 @@ class Backbone(nn.Module):
 
     def forward(self, x):
         return self.model.extract_features(x)
-
-
-def reasoning_init(reasoning: torch.Tensor, n_components, n_classes):
-    reasoning.data = torch.zeros((2, 1, n_components * n_classes, n_classes))
-    reasoning.data[0] = torch.rand(1, 1, n_components * n_classes, n_classes) / 4
-    reasoning.data[1] = 1 - reasoning[0]
-    return reasoning
 
 
 def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
@@ -129,35 +119,17 @@ def main():
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
     backbone = Backbone()
-    model = CBCModel(backbone,
-                     n_classes=10,
-                     n_components=(args.n_components*10),  # 5 per class, 10 classes  # noqa
-                     component_shape=(3, 224, 224))
 
-    # set reasoning probabilities to zero
-    reasoning_init(model.reasoning_layer.reasoning_probabilities, args.n_components, 10)
+    print(args.n_components*10)
 
-    print("comp", model.components.shape)
-
-    import numpy as np
-    from PIL import Image
-
-    # set components with class 5 samples for each class
-    for class_idx in range(10):
-        class_target_indices = np.where(np.array(train_loader.dataset.targets) == class_idx)[0][:5]
-        class_components = np.take(train_loader.dataset.data, class_target_indices, axis=0)
-
-        print(class_target_indices)
-
-        for class_component_idx in range(args.n_components):
-            
-            image_idx = (class_idx*args.n_components)+class_component_idx
-
-            model.components.data[image_idx] = test_loader.dataset.transform(Image.fromarray(class_components[class_component_idx]))
-
-        tmp = model.reasoning_layer.reasoning_probabilities.data[0, 0, image_idx, class_idx]
-        model.reasoning_layer.reasoning_probabilities.data[0, 0, image_idx, class_idx] = model.reasoning_layer.reasoning_probabilities[-1, 0, image_idx, class_idx]
-        model.reasoning_layer.reasoning_probabilities.data[-1, 0, image_idx, class_idx] = tmp
+    model = FixedCBCModel(backbone,
+                          n_classes=10,
+                          n_components=(args.n_components),
+                          component_shape=(3, 224, 224),
+                          data=train_loader.dataset.data,
+                          targets=train_loader.dataset.targets,
+                          image_transform=test_loader.dataset.transform
+                          )
 
     visualize_components(0, model, "./visualization")
 
