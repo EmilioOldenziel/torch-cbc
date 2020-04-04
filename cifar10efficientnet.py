@@ -14,32 +14,24 @@ from torch_cbc.activations import swish
 
 from utils import visualize_components
 
+from efficientnet_pytorch import EfficientNet
+
 
 class Backbone(nn.Module):
     def __init__(self):
         super(Backbone, self).__init__()
-        self.conv2d = ConstrainedConv2d
-
-        self.conv1 = self.conv2d(3, 32, 3, 1)
-        torch.nn.init.xavier_uniform_(self.conv1.weight)
-        torch.nn.init.zeros_(self.conv1.bias)
-        self.conv2 = self.conv2d(32, 64, 3, 1)
-        torch.nn.init.xavier_uniform_(self.conv2.weight)
-        torch.nn.init.zeros_(self.conv2.bias)
-        self.conv3 = self.conv2d(64, 64, 3, 1)
-        torch.nn.init.xavier_uniform_(self.conv3.weight)
-        torch.nn.init.zeros_(self.conv3.bias)
-        self.conv4 = self.conv2d(64, 128, 3, 1)
-        torch.nn.init.xavier_uniform_(self.conv4.weight)
-        torch.nn.init.zeros_(self.conv4.bias)
-        self.maxpool2d = nn.MaxPool2d(2)
+        self.model = EfficientNet.from_pretrained("efficientnet-b0",
+                                                  advprop=True)
 
     def forward(self, x):
-        x = swish(self.conv2(swish(self.conv1(x))))
-        x = self.maxpool2d(x)
-        x = swish(self.conv4(swish(self.conv3(x))))
-        x = self.maxpool2d(x)
-        return x
+        return self.model.extract_features(x)
+
+
+def reasoning_init(reasoning: torch.Tensor, n_components, n_classes):
+    reasoning.data = torch.zeros((2, 1, n_components * n_classes, n_classes))
+    reasoning.data[0] = torch.rand(1, 1, n_components * n_classes, n_classes) / 4
+    reasoning.data[1] = 1 - reasoning[0]
+    return reasoning
 
 
 def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
@@ -97,11 +89,11 @@ def main():
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
-    parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
-                        help='learning rate (default: 0.003)')
+    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
+                        help='learning rate (default: 0.001)')
     parser.add_argument('--margin', type=float, default=0.3,
                         help='Margin Loss margin (default: 0.3)')
-    parser.add_argument('--n_components', type=int, default=10, metavar='C',
+    parser.add_argument('--n_components', type=int, default=5, metavar='C',
                         help='number of components (default: 9)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
@@ -125,11 +117,13 @@ def main():
                             transforms.RandomAffine(0,
                                                     translate=(0.1, 0.1)),
                             # transforms.RandomRotation(15, fill=(0,)),
+                            transforms.Resize(224),
                             transforms.ToTensor()
-                       ])),
+                        ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
         datasets.CIFAR10('../data', train=False, transform=transforms.Compose([
+                           transforms.Resize(224),
                            transforms.ToTensor()
                        ])),
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
@@ -137,19 +131,38 @@ def main():
     backbone = Backbone()
     model = CBCModel(backbone,
                      n_classes=10,
-                     n_components=args.n_components,
-                     component_shape=(3, 32, 32)).to(device)
+                     n_components=(args.n_components*10),  # 5 per class, 10 classes  # noqa
+                     component_shape=(3, 224, 224))
 
-    # set components with class mean
-    for c in range(10):
-        model.components[c].data = transforms.ToTensor()(
-            train_loader.dataset.data[
-                torch.as_tensor(train_loader.dataset.targets) == c]
-            .mean(axis=0))
+    # set reasoning probabilities to zero
+    reasoning_init(model.reasoning_layer.reasoning_probabilities, args.n_components, 10)
 
-        # set positive reasoning to 1.0 for component c for class c
-        model.reasoning_layer.reasoning_probabilities.data[0, 0, c, c] = 1
+    import numpy as np
+    from PIL import Image
+
+    # set components with class 5 samples for each class
+    for class_idx in range(10):
+        class_target_indices = np.where(np.array(train_loader.dataset.targets) == class_idx)[0][:5]
+        class_components = np.take(train_loader.dataset.data, class_target_indices, axis=0)
+
+        for class_component_idx in range(args.n_components):
+            
+            image_idx = (class_idx*args.n_components)+class_component_idx
+            print("image_index", image_idx)
+            model.components[image_idx].data = test_loader.dataset.transform(Image.fromarray(class_components[class_component_idx]))
+
+        tmp = model.reasoning_layer.reasoning_probabilities.data[0, 0, image_idx, class_idx]
+        model.reasoning_layer.reasoning_probabilities.data[0, 0, image_idx, class_idx] = model.reasoning_layer.reasoning_probabilities[-1, 0, image_idx, class_idx]
+        model.reasoning_layer.reasoning_probabilities.data[-1, 0, image_idx, class_idx] = tmp
+
     visualize_components(0, model, "./visualization")
+
+    # freeze backbone and components
+    for name, p in model.named_parameters():
+        if ('backbone' in name) or ('component' in name):
+            p.requires_grad = False
+
+    model.to(device)
 
     print(model)
 
@@ -158,20 +171,11 @@ def main():
                                                      patience=3,
                                                      factor=0.9,
                                                      verbose=True)
-    # start training with MSE
-    lossfunction = torch.nn.MSELoss()
+
+    lossfunction = MarginLoss(margin=args.margin)
 
     print("Starting training")
     for epoch in range(1, args.epochs + 1):
-
-        # loss scheduling
-        if epoch == 25:
-            lossfunction = MarginLoss(margin=0.1)
-        if epoch == 75:
-            lossfunction.margin = 0.2
-        if epoch == 125:
-            lossfunction.margin = 0.3
-
         train(args, model, device, train_loader, optimizer, lossfunction, epoch)  # noqa
         test_loss = test(args, model, device, test_loader, lossfunction)
         scheduler.step(test_loss)
