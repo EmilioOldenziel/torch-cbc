@@ -34,7 +34,7 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
         onehot = torch.zeros(len(target), 10, device=device) \
                       .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
         loss = lossfunction(output, onehot).mean()
-        loss.backward()
+        loss.backward(retain_graph=True)
         optimizer.step()
 
         for name, p in model.named_parameters():

@@ -47,8 +47,8 @@ class FixedCBCModel(nn.Module):
             self.reasoning_layer.reasoning_probabilities.data[0, 0, image_idx, class_idx] = self.reasoning_layer.reasoning_probabilities[-1, 0, image_idx, class_idx]
             self.reasoning_layer.reasoning_probabilities.data[-1, 0, image_idx, class_idx] = tmp
 
-        self.components_feature_map = self.backbone(self.components)
-
+        self.register_buffer('components_feature_map', self.backbone(self.components))
+        
         self.similarity = CosineSimilarity2D(filter_size=self.components_feature_map.shape)  # noqa
 
     def forward(self, x):
@@ -62,3 +62,4 @@ class FixedCBCModel(nn.Module):
         # detection: (batch size, n_components)
 
         return self.reasoning_layer(detection)
+s
