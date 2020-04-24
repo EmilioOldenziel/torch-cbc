@@ -5,7 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
-from torchvision.models import resnet18
+import torch_xla
+import torch_xla.core.xla_model as xm
 
 from torch_cbc.fixedCBC_model import FixedCBCModel
 from torch_cbc.losses import MarginLoss
@@ -18,8 +19,7 @@ from efficientnet_pytorch import EfficientNet
 class Backbone(nn.Module):
     def __init__(self):
         super(Backbone, self).__init__()
-        self.model = EfficientNet.from_pretrained("efficientnet-b0",
-                                                  advprop=True)
+        self.model = EfficientNet.from_pretrained("efficientnet-b0", advprop=True)
 
     def forward(self, x):
         return self.model.extract_features(x)
@@ -36,7 +36,7 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
                       .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
         loss = lossfunction(output, onehot).mean()
         loss.backward()
-        optimizer.step()
+        xm.optimizer_step(optimizer, barrier=True)
 
         for name, p in model.named_parameters():
             if ('components' in name) or ('reasoning' in name):
@@ -99,7 +99,9 @@ def main():
 
     torch.manual_seed(args.seed)
 
-    device = torch.device("cuda" if use_cuda else "cpu")
+    #device = torch.device("cuda" if use_cuda else "cpu")
+    device = xm.xla_device()
+    print(device)
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(

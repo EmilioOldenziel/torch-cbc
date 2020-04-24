@@ -54,7 +54,7 @@ class FixedCBCModel(nn.Module):
     def forward(self, x):
 
         x = self.backbone(x)
-        y = self.backbone(self.components)  # TODO: replace by pre-computed feature map
+        y = copy.deepcopy(self.backbone)(self.components)  # TODO: replace by pre-computed feature map
 
         detection = self.similarity(x,  y)
         # detection: (batch, n_components, 1, 1)

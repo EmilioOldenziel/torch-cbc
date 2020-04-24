@@ -5,7 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
-from torchvision.models import resnet18
+import torch_xla
+import torch_xla.core.xla_model as xm
 
 from torch_cbc.fixedCBC_model import FixedCBCModel
 from torch_cbc.losses import MarginLoss
@@ -18,8 +19,7 @@ from efficientnet_pytorch import EfficientNet
 class Backbone(nn.Module):
     def __init__(self):
         super(Backbone, self).__init__()
-        self.model = EfficientNet.from_pretrained("efficientnet-b0",
-                                                  advprop=True)
+        self.model = EfficientNet.from_pretrained("efficientnet-b4", advprop=True)
 
     def forward(self, x):
         return self.model.extract_features(x)
@@ -32,11 +32,11 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
         optimizer.zero_grad()
         output = model(data)
 
-        onehot = torch.zeros(len(target), 10, device=device) \
+        onehot = torch.zeros(len(target), 100, device=device) \
                       .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
         loss = lossfunction(output, onehot).mean()
         loss.backward()
-        optimizer.step()
+        xm.optimizer_step(optimizer, barrier=True)
 
         for name, p in model.named_parameters():
             if ('components' in name) or ('reasoning' in name):
@@ -56,7 +56,7 @@ def test(args, model, device, test_loader, lossfunction):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            onehot = torch.zeros(len(target), 10, device=device) \
+            onehot = torch.zeros(len(target), 100, device=device) \
                           .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
             test_loss += lossfunction(output, onehot).sum().item()  # sum up batch loss # noqa
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability # noqa
@@ -99,11 +99,13 @@ def main():
 
     torch.manual_seed(args.seed)
 
-    device = torch.device("cuda" if use_cuda else "cpu")
+    #device = torch.device("cuda" if use_cuda else "cpu")
+    device = xm.xla_device()
+    print(device)
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10('../data', train=True, download=True,
+        datasets.CIFAR100('../data', train=True, download=True,
                          transform=transforms.Compose([
                             transforms.RandomAffine(0,
                                                     translate=(0.1, 0.1)),
@@ -114,7 +116,7 @@ def main():
                         ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10('../data', train=False, transform=transforms.Compose([
+        datasets.CIFAR100('../data', train=False, transform=transforms.Compose([
                            transforms.Resize(224),
                            transforms.ToTensor(),
                            transforms.Lambda(lambda img: img * 2.0 - 1.0)  # advprop normalization
@@ -123,10 +125,8 @@ def main():
 
     backbone = Backbone()
 
-    print(args.n_components*10)
-
     model = FixedCBCModel(backbone,
-                          n_classes=10,
+                          n_classes=100,
                           n_components=(args.n_components),
                           component_shape=(3, 224, 224),
                           data=train_loader.dataset.data,
@@ -161,7 +161,7 @@ def main():
         visualize_components(epoch, model, "./visualization")
 
     if (args.save_model):
-        torch.save(model.state_dict(), "cifar10_cnn.pt")
+        torch.save(model.state_dict(), "cifar100_cnn.pt")
 
 
 if __name__ == '__main__':
