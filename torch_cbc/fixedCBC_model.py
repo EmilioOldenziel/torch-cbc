@@ -40,10 +40,10 @@ class FixedCBCModel(nn.Module):
                 image_idx = (class_idx*n_components)+class_component_idx
                 self.components.data[image_idx] = image_transform(Image.fromarray(class_components[class_component_idx]))
 
-            # set reasoning
-            tmp = self.reasoning_layer.reasoning_probabilities.data[0, 0, image_idx, class_idx]
-            self.reasoning_layer.reasoning_probabilities.data[0, 0, image_idx, class_idx] = self.reasoning_layer.reasoning_probabilities[-1, 0, image_idx, class_idx]
-            self.reasoning_layer.reasoning_probabilities.data[-1, 0, image_idx, class_idx] = tmp
+                # set reasoning
+                tmp = self.reasoning_layer.reasoning_probabilities.data[0, 0, image_idx, class_idx]
+                self.reasoning_layer.reasoning_probabilities.data[0, 0, image_idx, class_idx] = self.reasoning_layer.reasoning_probabilities[-1, 0, image_idx, class_idx]
+                self.reasoning_layer.reasoning_probabilities.data[-1, 0, image_idx, class_idx] = tmp
 
         self.register_buffer('components_feature_map', self.backbone(self.components))
 
