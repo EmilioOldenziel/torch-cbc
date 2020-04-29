@@ -18,8 +18,7 @@ from efficientnet_pytorch import EfficientNet
 class Backbone(nn.Module):
     def __init__(self):
         super(Backbone, self).__init__()
-        self.model = EfficientNet.from_pretrained("efficientnet-b0",
-                                                  advprop=True)
+        self.model = EfficientNet.from_pretrained("efficientnet-b0")
 
     def forward(self, x):
         return self.model.extract_features(x)
@@ -37,10 +36,6 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
         loss = lossfunction(output, onehot).mean()
         loss.backward()
         optimizer.step()
-
-        for name, p in model.named_parameters():
-            if ('components' in name) or ('reasoning' in name):
-                p.data.clamp_(0, 1)
 
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
@@ -73,10 +68,10 @@ def test(args, model, device, test_loader, lossfunction):
 
 def main():
     # Training settings
-    parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
+    parser = argparse.ArgumentParser(description='PyTorch CIFAR Example')
     parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',  # noqa
+    parser.add_argument('--test-batch-size', type=int, default=500, metavar='N',  # noqa
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
@@ -110,20 +105,22 @@ def main():
                             # transforms.RandomRotation(15, fill=(0,)),
                             transforms.Resize(224),
                             transforms.ToTensor(),
-                            transforms.Lambda(lambda img: img * 2.0 - 1.0)  # advprop normalization
+                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
                         ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
         datasets.CIFAR10('../data', train=False, transform=transforms.Compose([
                            transforms.Resize(224),
                            transforms.ToTensor(),
-                           transforms.Lambda(lambda img: img * 2.0 - 1.0)  # advprop normalization
+                           transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
                        ])),
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
     backbone = Backbone()
 
-    print(args.n_components*10)
+     # freeze backbone and components
+    for name, p in backbone.named_parameters():
+      p.requires_grad = False
 
     model = FixedCBCModel(backbone,
                           n_classes=10,

@@ -18,9 +18,7 @@ class FixedCBCModel(nn.Module):
 
         self.backbone = backbone
 
-        self.components = nn.Parameter(  # (n_components, H, W)
-            torch.rand((n_components*n_classes,) + component_shape)
-        )
+        self.components = torch.rand((n_components*n_classes,) + component_shape) # (n_components, H, W)
 
         self.reasoning_layer = ReasoningLayer(n_components=n_components,
                                         n_classes=n_classes)
@@ -54,9 +52,8 @@ class FixedCBCModel(nn.Module):
     def forward(self, x):
 
         x = self.backbone(x)
-        y = copy.deepcopy(self.backbone)(self.components)  # TODO: replace by pre-computed feature map
 
-        detection = self.similarity(x,  y)
+        detection = self.similarity(x,  self.components_feature_map)
         # detection: (batch, n_components, 1, 1)
 
         detection = detection.squeeze(-1).squeeze(-1)
