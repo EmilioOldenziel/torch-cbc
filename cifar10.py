@@ -92,10 +92,10 @@ def main():
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--batch-size', type=int, default=128, metavar='N',
-                        help='input batch size for training (default: 64)')
+                        help='input batch size for training (default: 128)')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',  # noqa
                         help='input batch size for testing (default: 1000)')
-    parser.add_argument('--epochs', type=int, default=10, metavar='N',
+    parser.add_argument('--epochs', type=int, default=200, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                         help='learning rate (default: 0.003)')
@@ -124,13 +124,17 @@ def main():
                          transform=transforms.Compose([
                             transforms.RandomAffine(0,
                                                     translate=(0.1, 0.1)),
-                            # transforms.RandomRotation(15, fill=(0,)),
-                            transforms.ToTensor()
+                            transforms.RandomRotation(15, fill=(0,)),
+                            transforms.ToTensor(),
+                            transforms.Normalize((0.5, 0.5, 0.5),
+                                                 (0.5, 0.5, 0.5))
                        ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
         datasets.CIFAR10('../data', train=False, transform=transforms.Compose([
-                           transforms.ToTensor()
+                           transforms.ToTensor(),
+                           transforms.Normalize((0.5, 0.5, 0.5),
+                                                (0.5, 0.5, 0.5))
                        ])),
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
@@ -167,9 +171,9 @@ def main():
         # loss scheduling
         if epoch == 25:
             lossfunction = MarginLoss(margin=0.1)
-        if epoch == 175:
+        if epoch == 75:
             lossfunction.margin = 0.2
-        if epoch == 325:
+        if epoch == 125:
             lossfunction.margin = 0.3
 
         train(args, model, device, train_loader, optimizer, lossfunction, epoch)  # noqa
