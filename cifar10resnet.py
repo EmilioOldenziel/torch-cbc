@@ -5,24 +5,37 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
-from torchvision.models import resnet18
+from torchvision.models import resnet50
 
 from torch_cbc.fixedCBC_model import FixedCBCModel
 from torch_cbc.losses import MarginLoss
 
 from utils import visualize_components
 
-from efficientnet_pytorch import EfficientNet
-
 
 class Backbone(nn.Module):
+
     def __init__(self):
-        super(Backbone, self).__init__()
-        self.model = EfficientNet.from_pretrained("efficientnet-b0")
+        self.model = resnet50(pretrained=True)
+        self.model._forward_impl = self._forward_impl
+
+    def _forward_impl(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.avgpool(x)
+        return x
 
     def forward(self, x):
-        return self.model.extract_features(x)
-
+        return self.model(x)
+    
 
 def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
     model.train()
@@ -84,7 +97,7 @@ def main():
     parser.add_argument('--margin', type=float, default=0.3,
                         help='Margin Loss margin (default: 0.3)')
     parser.add_argument('--n_components', type=int, default=5, metavar='C',
-                        help='number of components per class')
+                        help='number of components (default: 9)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
@@ -121,6 +134,7 @@ def main():
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
     backbone = Backbone()
+
 
      # freeze backbone and components
     for name, p in backbone.named_parameters():

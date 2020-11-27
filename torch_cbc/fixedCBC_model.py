@@ -18,7 +18,7 @@ class FixedCBCModel(nn.Module):
 
         self.backbone = backbone
 
-        self.components = torch.rand((n_components*n_classes,) + component_shape) # (n_components, H, W)
+        self.components = torch.rand((n_components*n_classes,) + component_shape) # (n_components, C, H, W)
 
         self.reasoning_layer = ReasoningLayer(n_components=n_components,
                                         n_classes=n_classes)
@@ -31,7 +31,7 @@ class FixedCBCModel(nn.Module):
         from PIL import Image
 
         # set components with class 5 samples for each class
-        for class_idx in range(10):
+        for class_idx in range(n_classes):
             class_target_indices = np.where(np.array(targets) == class_idx)[0][:5]
             class_components = np.take(data, class_target_indices, axis=0)
 

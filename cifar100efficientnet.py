@@ -31,7 +31,7 @@ def train(args, model, device, train_loader, optimizer, lossfunction, epoch):
         optimizer.zero_grad()
         output = model(data)
 
-        onehot = torch.zeros(len(target), 10, device=device) \
+        onehot = torch.zeros(len(target), 100, device=device) \
                       .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
         loss = lossfunction(output, onehot).mean()
         loss.backward()
@@ -55,7 +55,7 @@ def test(args, model, device, test_loader, lossfunction):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            onehot = torch.zeros(len(target), 10, device=device) \
+            onehot = torch.zeros(len(target), 100, device=device) \
                           .scatter_(1, target.unsqueeze(1), 1.)  # 10 classes
             test_loss += lossfunction(output, onehot).sum().item()  # sum up batch loss # noqa
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability # noqa
@@ -84,7 +84,7 @@ def main():
     parser.add_argument('--margin', type=float, default=0.3,
                         help='Margin Loss margin (default: 0.3)')
     parser.add_argument('--n_components', type=int, default=5, metavar='C',
-                        help='number of components per class')
+                        help='number of components (default: 9)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
@@ -127,7 +127,7 @@ def main():
       p.requires_grad = False
 
     model = FixedCBCModel(backbone,
-                          n_classes=10,
+                          n_classes=100,
                           n_components=(args.n_components),
                           component_shape=(3, 224, 224),
                           data=train_loader.dataset.data,
@@ -162,7 +162,7 @@ def main():
         visualize_components(epoch, model, "./visualization")
 
     if (args.save_model):
-        torch.save(model.state_dict(), "cifar10_cnn.pt")
+        torch.save(model.state_dict(), "cifar100_cnn.pt")
 
 
 if __name__ == '__main__':
