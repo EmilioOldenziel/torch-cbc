@@ -8,7 +8,7 @@ from .cosine2d import CosineSimilarity2D
 
 
 class CBCModel(nn.Module):
-    def __init__(self, backbone, n_classes, n_components, component_shape):
+    def __init__(self, backbone, n_classes, n_components, component_shape, reasoning_init='random'):
         super(CBCModel, self).__init__()
 
         self.backbone = backbone
@@ -24,7 +24,8 @@ class CBCModel(nn.Module):
         self.similarity = CosineSimilarity2D(filter_size=(n_components,) + featuremap_shape)  # noqa
 
         self.reasoning_layer = ReasoningLayer(n_components=n_components,
-                                              n_classes=n_classes)
+                                              n_classes=n_classes,
+                                              initialization=reasoning_init)
 
     def forward(self, x):
 

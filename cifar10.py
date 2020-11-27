@@ -142,7 +142,8 @@ def main():
     model = CBCModel(backbone,
                      n_classes=10,
                      n_components=args.n_components,
-                     component_shape=(3, 32, 32)).to(device)
+                     component_shape=(3, 32, 32),
+                     reasoning_init='zeros').to(device)
 
     # set components with class mean
     for c in range(10):
