@@ -1,16 +1,12 @@
-from __future__ import print_function
 import argparse
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 
 from torch_cbc.cbc_model import CBCModel
 from torch_cbc.losses import MarginLoss
-from torch_cbc.constraints import EuclideanNormalization
 from torch_cbc.layers import ConstrainedConv2d
-from torch_cbc.activations import swish
 
 from utils import visualize_components
 
@@ -19,6 +15,7 @@ class Backbone(nn.Module):
     def __init__(self):
         super(Backbone, self).__init__()
         self.conv2d = ConstrainedConv2d
+        self.activation = nn.Hardswish()
 
         self.conv1 = self.conv2d(3, 32, 3, 1)
         torch.nn.init.xavier_uniform_(self.conv1.weight)
@@ -35,9 +32,9 @@ class Backbone(nn.Module):
         self.maxpool2d = nn.MaxPool2d(2)
 
     def forward(self, x):
-        x = swish(self.conv2(swish(self.conv1(x))))
+        x = self.activation(self.conv2(self.activation(self.conv1(x))))
         x = self.maxpool2d(x)
-        x = swish(self.conv4(swish(self.conv3(x))))
+        x = self.activation(self.conv4(self.activation(self.conv3(x))))
         x = self.maxpool2d(x)
         return x
 
@@ -124,11 +121,11 @@ def main():
                          transform=transforms.Compose([
                             transforms.RandomAffine(0,
                                                     translate=(0.1, 0.1)),
-                            transforms.RandomRotation(15, fill=(0,)),
+                            transforms.RandomRotation(15, fill=0),
                             transforms.ToTensor(),
                             transforms.Normalize((0.5, 0.5, 0.5),
                                                  (0.5, 0.5, 0.5))
-                       ])),
+                         ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
         datasets.CIFAR10('../data', train=False, transform=transforms.Compose([

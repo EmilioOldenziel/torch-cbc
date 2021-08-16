@@ -3,12 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import copy
 
-from .layers import ReasoningLayer
-from .cosine2d import CosineSimilarity2D
+from torch_cbc.layers import ReasoningLayer
+from torch_cbc.similarity import CosineSimilarity2D
 
 
 class CBCModel(nn.Module):
-    def __init__(self, backbone, n_classes, n_components, component_shape, reasoning_init='random'):
+    def __init__(self, backbone, n_classes, n_components, component_shape,
+                 reasoning_init='random'):
         super(CBCModel, self).__init__()
 
         self.backbone = backbone

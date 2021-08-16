@@ -17,16 +17,19 @@ class ConstrainedConv2d(nn.Conv2d):
 
 
 class ReasoningLayer(nn.Module):
-    def __init__(self, n_components, n_classes, n_replicas=1, eps=1e-08, initialization='random'):
+    def __init__(self, n_components, n_classes, n_replicas=1, eps=1e-08,
+                 initialization='random'):
         super(ReasoningLayer, self).__init__()
         self.n_classes = n_classes
         self.n_replicas = n_replicas
         self.eps = eps
 
         if initialization == 'random':
-            probabilities_init = torch.rand(2, self.n_replicas, n_components, self.n_classes)
+            probabilities_init = torch.rand(2, self.n_replicas, n_components,
+                                            self.n_classes)
         if initialization == 'zeros':
-            probabilities_init = torch.zeros(2, self.n_replicas, n_components, self.n_classes)
+            probabilities_init = torch.zeros(2, self.n_replicas, n_components,
+                                             self.n_classes)
 
         self.reasoning_probabilities = nn.Parameter(
             probabilities_init
