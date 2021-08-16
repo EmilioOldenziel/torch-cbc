@@ -1,6 +1,7 @@
 import argparse
 import torch
 import torch.nn as nn
+from torch.nn.modules import activation
 import torch.optim as optim
 from torchvision import datasets, transforms
 
@@ -12,10 +13,10 @@ from utils import visualize_components
 
 
 class Backbone(nn.Module):
-    def __init__(self):
+    def __init__(self, activation=nn.Hardswish()):
         super(Backbone, self).__init__()
         self.conv2d = ConstrainedConv2d
-        self.activation = nn.Hardswish()
+        self.activation = activation
 
         self.conv1 = self.conv2d(3, 32, 3, 1)
         torch.nn.init.xavier_uniform_(self.conv1.weight)
